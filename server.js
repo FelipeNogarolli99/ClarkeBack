@@ -25,6 +25,9 @@ sequelize.authenticate()
 const SupplierRoutes = require("./routes/Supplier")
 app.use(SupplierRoutes)
 
+const AuthRoutes = require("./routes/authRoutes");
+app.use("/auth", AuthRoutes);
+
 // Start do servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
