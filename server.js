@@ -28,7 +28,24 @@ app.use(SupplierRoutes)
 const AuthRoutes = require("./routes/authRoutes");
 app.use("/auth", AuthRoutes);
 
-// Start do servidor
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+// // Start do servidor
+// app.listen(PORT, () => {
+//   console.log(`Servidor rodando em http://localhost:${PORT}`);
+// });
+
+
+const startServer = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("Conectado ao banco!");
+
+    app.listen(PORT, () => {
+      console.log(`Servidor rodando em http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Erro ao iniciar o servidor:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
