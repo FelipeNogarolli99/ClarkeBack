@@ -1,96 +1,101 @@
-const { where } = require("sequelize")
+const User = require('../model/User');
 const bcrypt = require('bcryptjs');
-const User = require('../model/User');  // Supondo que você tenha um modelo de usuário
+const jwt = require('jsonwebtoken');
 
-module.exports = class AuthController{
-    static login(req, res){
-        res.render("auth/login")
+class AuthController {
+    // Método GET para login
+    login(req, res) {
+        res.status(200).json({ message: 'Rota de login' }); // Retorna uma mensagem de sucesso
     }
 
-    static register(req,res ){
-        res.render('auth/register')
+    // Método POST para login
+    async loginPost(req, res) {
+        const { username, password } = req.body;
+
+        try {
+            const user = await User.findOne({ where: { username } });
+
+            if (!user) {
+                return res.status(400).json({ message: 'Usuário não encontrado' });
+            }
+
+            const isMatch = await bcrypt.compare(password, user.password);
+
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Senha incorreta' });
+            }
+
+            // Gerar um token JWT para o usuário
+            const token = jwt.sign({ id: user.id }, 'secretkey', { expiresIn: '1h' });
+
+            // Armazenar o token na sessão ou cookie
+            res.cookie('authToken', token, { httpOnly: true });
+
+            res.status(200).json({ message: 'Login realizado com sucesso!', token }); // Retorna a resposta em JSON
+        } catch (error) {
+            res.status(500).json({ message: 'Erro interno do servidor' });
+        }
     }
 
-    static async loginPost(req, res){
-        const {email, password} = req.body
+    // Método GET para registro
+    register(req, res) {
+        res.status(200).json({ message: 'Rota de registro' }); // Retorna uma mensagem de sucesso
+    }
 
-        // se usuario existe e senha é aquela
-        const userExists = await User.findOne({where: {email: email}})
+    // Método POST para registro
+    // async registerPost(req, res) {
+    //     const { username, password, confirmPassword } = req.body;
 
-        if(!userExists){
-            req.flash("message", "Usuario não encontrado")
-            return res.render("auth/login")
-        }
+    //     if (password !== confirmPassword) {
+    //         return res.status(400).json({ message: 'As senhas não coincidem' });
+    //     }
 
-        const passwordMatch = bcrypt.compareSync(password, userExists.password)
+    //     try {
+    //         const hashedPassword = await bcrypt.hash(password, 10);
 
-        if(!passwordMatch){
-            req.flash("message", "Senha invalida")
-            return res.render("auth/login")
-        }
+    //         const newUser = await User.create({
+    //             username,
+    //             password: hashedPassword
+    //         });
 
+    //         // Após criar o usuário, fazer o login automaticamente
+    //         const token = jwt.sign({ id: newUser.id }, 'secretkey', { expiresIn: '1h' });
+
+    //         res.cookie('authToken', token, { httpOnly: true });
+
+    //         res.status(201).json({ message: 'Usuário registrado com sucesso!', token }); // Resposta de sucesso com token
+    //     } catch (error) {
+    //         res.status(500).json({ message: 'Erro ao registrar usuário' });
+    //     }
+    // }
+
+
+    async registerPost  (req, res) {
+        try {
+            console.log("Dados recebidos:", req.body);
+            const { name, email, password } = req.body;
     
-        req.session.userid = userExists.id
-
-        req.flash('message', "Autentiação realizada com suceso")
-
-        req.session.save(() =>{
-            res.redirect("/")
-        })
-
-    }
-
-    static async registerPost(req, res){
-
-        const {name, email, password, confirmPassword} = req.body
-
-        // validar senha
-
-        if(password != confirmPassword){
-            req.flash("message", "As senhas não conferem, tente novamente")
-            return res.render("auth/register")
-
-            
-        }   
-
-        const checkIfUserExists = await User.findOne({where: {email: email}})
-
-        if(checkIfUserExists){
-            req.flash("message", "O e-mail já está em uso!")
-            return res.render("auth/register")
-
+            if (!name || !email || !password) {
+                return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
+            }
+    
+            const user = await User.create({ name, email, password });
+    
+            res.status(201).json({ message: "Usuário criado com sucesso!", user });
+    
+        } catch (error) {
+            console.error("Erro ao registrar usuário:", error);
+            res.status(500).json({ error: "Erro ao registrar usuário" });
         }
-
-        // create senha
-
-        const salt = bcrypt.genSaltSync(10)
-        const hashedPassword = bcrypt.hashSync(password, salt)
-
-        const user ={
-            name,
-            email,
-            password: hashedPassword
-        }
-
-       try{
-        const createUser = await User.create(user)
-
-        req.session.userid = createUser.id
-
-        req.flash('message', "Cadastro realizado com suceso")
-
-        req.session.save(() =>{
-            res.redirect("/")
-        })
-       }catch(err){
-        console.log(err)
-       }
-    }
-
-    static logout(req, res){
-        req.session.destroy()
-        res.redirect("/login")
+    };
+    
+    
+    
+    // Método GET para logout
+    logout(req, res) {
+        res.clearCookie('authToken'); // Limpa o token do cookie
+        res.status(200).json({ message: 'Logout realizado com sucesso' }); // Retorna mensagem em JSON
     }
 }
 
-
+module.exports = new AuthController();
