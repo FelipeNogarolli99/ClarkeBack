@@ -109,175 +109,79 @@
 // // module.exports = new AuthController();
 
 
-// class AuthController {
-//     static login(req, res) {
-//         res.render("auth/login");
-//     }
+class AuthController {
+    static login(req, res) {
+        res.render("auth/login");
+    }
 
-//     static register(req, res) {
-//         res.render("auth/register");
-//     }
+    static register(req, res) {
+        res.render("auth/register");
+    }
 
-//     static async loginPost(req, res) {
-//         try {
-//             console.log("📩 Dados recebidos no login:", req.body); // Verificar se os dados estão chegando corretamente
+    static async loginPost(req, res) {
+        try {
+            console.log("📩 Dados recebidos no login:", req.body); // Verificar se os dados estão chegando corretamente
         
-//             const { email, password } = req.body;
-//             if (!email || !password) {
-//                 console.log("❌ Campos vazios!");
-//                 return res.status(400).json({ error: "Preencha todos os campos!" });
-//             }
+            const { email, password } = req.body;
+            if (!email || !password) {
+                console.log("❌ Campos vazios!");
+                return res.status(400).json({ error: "Preencha todos os campos!" });
+            }
     
-//             const user = await User.findOne({ where: { email } });
+            const user = await User.findOne({ where: { email } });
     
-//             if (!user) {
-//                 console.log("❌ Usuário não encontrado:", email);
-//                 return res.status(401).json({ error: "Usuário não encontrado!" });
-//             }
+            if (!user) {
+                console.log("❌ Usuário não encontrado:", email);
+                return res.status(401).json({ error: "Usuário não encontrado!" });
+            }
     
-//             console.log("✅ Usuário encontrado:", user);
+            console.log("✅ Usuário encontrado:", user);
     
-//             // Comparação correta da senha
-//             const isPasswordValid = await bcrypt.compare(password, user.password);
-//             console.log("🔍 Senha válida?", isPasswordValid);
+            // Comparação correta da senha
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            console.log("🔍 Senha válida?", isPasswordValid);
     
-//             if (!isPasswordValid) {
-//                 console.log("❌ Senha inválida!");
-//                 return res.status(401).json({ error: "Senha inválida!" });
-//             }
+            if (!isPasswordValid) {
+                console.log("❌ Senha inválida!");
+                return res.status(401).json({ error: "Senha inválida!" });
+            }
     
-//             console.log("✅ Login realizado com sucesso!");
+            console.log("✅ Login realizado com sucesso!");
     
-//             return res.status(200).json({ message: "Login realizado com sucesso!" });
+            return res.status(200).json({ message: "Login realizado com sucesso!" });
     
-//         } catch (error) {
-//             console.error("🔥 Erro ao fazer login:", error);
-//             return res.status(500).json({ error: "Erro no servidor" });
-//         }
-//     }
-
-//     static async registerPost(req, res) {
-//         try {
-//             console.log("Dados recebidos:", req.body);
-//             const { name, email, password } = req.body;
-    
-//             if (!name || !email || !password) {
-//                 return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
-//             }
-
-//             // Hash da senha antes de salvar no banco
-//             const hashedPassword = await bcrypt.hash(password, 10);
-    
-//             const user = await User.create({ name, email, password: hashedPassword });
-    
-//             res.status(201).json({ message: "Usuário criado com sucesso!", user });
-    
-//         } catch (error) {
-//             console.error("Erro ao registrar usuário:", error);
-//             res.status(500).json({ error: "Erro ao registrar usuário" });
-//         }
-//     }
-
-//     static logout(req, res) {
-//         res.clearCookie('authToken');
-//         res.status(200).json({ message: 'Logout realizado com sucesso' });
-//     }
-// }
-// module.exports = AuthController;
-
-
-const { where } = require("sequelize")
-const User = require("../model/User")
-const bcrypt = require("bcryptjs")
- 
-module.exports = class AuthController{
-    static login(req, res){
-        res.render("auth/login")
+        } catch (error) {
+            console.error("🔥 Erro ao fazer login:", error);
+            return res.status(500).json({ error: "Erro no servidor" });
+        }
     }
 
-    static register(req,res ){
-        res.render('auth/register')
-    }
-
-    static async loginPost(req, res){
-        const {email, password} = req.body
-
-        // se usuario existe e senha é aquela
-        const userExists = await User.findOne({where: {email: email}})
-
-        if (!userExists) {
-            return res.status(401).json({ message: "Usuário não encontrado" });
-        }
-        
-
-        const passwordMatch = bcrypt.compareSync(password, userExists.password)
-
-        if(!passwordMatch){
-            req.flash("message", "Senha invalida")
-            return res.render("auth/login")
-        }
-
+    static async registerPost(req, res) {
+        try {
+            console.log("Dados recebidos:", req.body);
+            const { name, email, password } = req.body;
     
-        req.session.userid = userExists.id
+            if (!name || !email || !password) {
+                return res.status(400).json({ error: "Todos os campos são obrigatórios!" });
+            }
 
-        req.flash('message', "Autentiação realizada com suceso")
-
-        req.session.save(() =>{
-            res.redirect("/")
-        })
-
+            // Hash da senha antes de salvar no banco
+            const hashedPassword = await bcrypt.hash(password, 10);
+    
+            const user = await User.create({ name, email, password: hashedPassword });
+    
+            res.status(201).json({ message: "Usuário criado com sucesso!", user });
+    
+        } catch (error) {
+            console.error("Erro ao registrar usuário:", error);
+            res.status(500).json({ error: "Erro ao registrar usuário" });
+        }
     }
 
-    static async registerPost(req, res){
-
-        const {name, email, password, confirmPassword} = req.body
-
-        // validar senha
-
-        if(password != confirmPassword){
-            req.flash("message", "As senhas não conferem, tente novamente")
-            return res.render("auth/register")
-
-            
-        }   
-
-        const checkIfUserExists = await User.findOne({where: {email: email}})
-
-        if(checkIfUserExists){
-            req.flash("message", "O e-mail já está em uso!")
-            return res.render("auth/register")
-
-        }
-
-        // create senha
-
-        const salt = bcrypt.genSaltSync(10)
-        const hashedPassword = bcrypt.hashSync(password, salt)
-
-        const user ={
-            name,
-            email,
-            password: hashedPassword
-        }
-
-       try{
-        const createUser = await User.create(user)
-
-        req.session.userid = createUser.id
-
-        req.flash('message', "Cadastro realizado com suceso")
-
-        req.session.save(() =>{
-            res.redirect("/")
-        })
-       }catch(err){
-        console.log(err)
-       }
-    }
-
-    static logout(req, res){
-        req.session.destroy()
-        res.redirect("/login")
+    static logout(req, res) {
+        res.clearCookie('authToken');
+        res.status(200).json({ message: 'Logout realizado com sucesso' });
     }
 }
+module.exports = AuthController;
 
